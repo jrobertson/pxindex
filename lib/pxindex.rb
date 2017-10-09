@@ -7,8 +7,7 @@ require 'polyrex-headings'
 
 class PxIndex
 
-
-  def initialize(raw_s)
+  def initialize(raw_s, debug: false)
 
     s, _ = RXFHelper.read raw_s
 
@@ -16,18 +15,33 @@ class PxIndex
     @rs = @px.records
 
     @s = ''
+    @a = []
+    @debug = debug
 
+  end
+  
+  def parent()
+    @rs.first
   end
 
   def q?(s)
-
-    if (s.length - @s.length).abs > 1 or s[0..-2] != @s then
+    
+    return @a.last if s == @s
+    puts '@s : ' + @s.inspect if @debug
+    puts 's: ' + s.inspect if @debug
+    
+    # @s is used to store the previous string input to compare it with 
+    # the new string input
+    
+    if (s.length - @s.length).abs >= 1 or s[0..-2] != @s then
+      
+      @s = s      
 
       @rs = @px.records
       
       s2 = ''
       
-      a = s.chars.map do |x|
+      @a = s.chars.map do |x|
 
         s2 += x
         found = search_records(s2, @rs)
@@ -36,19 +50,13 @@ class PxIndex
         found
         
       end
-      
-      return a ? a.last  : nil
+
+      return @a ? @a.last  : nil
       
     end
-        
-    i = s.length-1
-
-    records = search_records(s, @rs)
-
-    @s = s
-    
-    return records
-
+  
+    return []
+  
   end
 
   alias query q?
@@ -58,6 +66,7 @@ class PxIndex
 
   def search_records(raw_s, rs=@rs)
     
+    puts 'raw_s : ' + raw_s.inspect if @debug
     
     if raw_s[-1] == ' ' then
 
