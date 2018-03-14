@@ -10,8 +10,20 @@ class PxIndex
   def initialize(raw_s, debug: false)
 
     s, _ = RXFHelper.read raw_s
+    
+    lines = s.lines
 
-    @px = PolyrexHeadings.new(s).to_polyrex   
+    header = []
+    header << lines.shift until lines[0].strip.empty?
+    
+    a = LineTree.new(lines.join.gsub(/^# [a-z]\n/,'')).to_a
+    a2 = a.group_by {|x| x.first[0] }.to_a
+    
+    s2 =  a2.map {|x| '# ' + x[0] + "\n\n" + treeize(x[-1]) }.join("\n\n")
+
+    @raw_px = header.join + "\n" + s2
+
+    @px = PolyrexHeadings.new(@raw_px).to_polyrex   
     @rs = @px.records
 
     @s = ''
@@ -61,6 +73,9 @@ class PxIndex
 
   alias query q?
   
+  def to_s()
+    @raw_px
+  end
 
   private
 
@@ -85,6 +100,13 @@ class PxIndex
     s = keywords.length > 1 ? keywords.last : raw_s
     
     a = rs.select {|x| x.title[0..s.length-1] == s}    
+    
+    if @debug then
+      puts 'a: ' + a.inspect 
+      if a.any? then
+        puts 'a.map ' + a.map(&:title).inspect
+      end
+    end
     
     if s.length == 1 and a.any? and keywords.length < 2 then
       a = a.first.records
@@ -114,5 +136,18 @@ class PxIndex
     end
 
   end
+  
+  def treeize(obj, indent=-2)
+
+    if obj.is_a? Array then
+
+      obj.map {|x| treeize(x, indent+1)}.join("\n")
+
+    else
+
+      '  ' * indent + obj
+
+    end
+  end  
 
 end
