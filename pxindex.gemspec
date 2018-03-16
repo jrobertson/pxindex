@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'pxindex'
-  s.version = '0.1.3'
+  s.version = '0.1.4'
   s.summary = 'Experimental gem to facilitate a keyword search, by querying a Polyrex document representing a hierarchical lookup table'
   s.authors = ['James Robertson']
   s.files = Dir['lib/pxindex.rb']

@@ -73,6 +73,10 @@ class PxIndex
 
   alias query q?
   
+  def to_px()
+    @px
+  end
+  
   def to_s()
     @raw_px
   end
