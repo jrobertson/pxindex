@@ -20,7 +20,7 @@ class PxIndex
     header << lines.shift until lines[0].strip.empty?
     
     a = LineTree.new(lines.join.gsub(/^# [a-z]\n/,'')).to_a
-    a2 = a.group_by {|x| x.first[0] }.to_a
+    a2 = a.group_by {|x| x.first[0] }.sort.to_a
     
     s2 =  a2.map do |x|      
       '# ' + x[0] + "\n\n" + \
