@@ -7,8 +7,11 @@ require 'polyrex-headings'
 
 class PxIndex
 
-  def initialize(raw_s, debug: false)
+  def initialize(raw_s, debug: false, allsorted: false, indexsorted: false)
 
+    @sorted = allsorted    
+    @debug = debug    
+    
     s, _ = RXFHelper.read raw_s
     
     lines = s.lines
@@ -19,8 +22,12 @@ class PxIndex
     a = LineTree.new(lines.join.gsub(/^# [a-z]\n/,'')).to_a
     a2 = a.group_by {|x| x.first[0] }.to_a
     
-    s2 =  a2.map {|x| '# ' + x[0] + "\n\n" + treeize(x[-1]) }.join("\n\n")
-
+    s2 =  a2.map do |x|      
+      '# ' + x[0] + "\n\n" + \
+          treeize(allsorted || indexsorted ? sort(x[-1]) : x[-1])
+    end.join("\n\n")
+    
+    puts 's2: ' + s2.inspect if @debug
     @raw_px = header.join + "\n" + s2
 
     @px = PolyrexHeadings.new(@raw_px).to_polyrex   
@@ -28,7 +35,7 @@ class PxIndex
 
     @s = ''
     @a = []
-    @debug = debug
+
 
   end
   
@@ -141,11 +148,29 @@ class PxIndex
 
   end
   
+  def sort(a)
+    puts 'sorting ... a: ' + a.inspect if @debug
+    return sort_children(a) if a.first.is_a? String
+    
+    r = a.sort_by do |x| 
+      next unless x[0].is_a? String
+      x[0]
+    end
+    puts 'after sort: ' + r.inspect if @debug
+    r
+  end
+  
+  def sort_children(a)
+    [a[0]] + a[1..-1].sort_by {|x| x[0]}
+  end
+  
   def treeize(obj, indent=-2)
 
     if obj.is_a? Array then
-
-      obj.map {|x| treeize(x, indent+1)}.join("\n")
+      
+      r = (@sorted ? sort(obj) : obj).map {|x| treeize(x, indent+1)}.join("\n")
+      puts 'r: ' + r.inspect if @debug
+      r
 
     else
 
