@@ -2,41 +2,28 @@
 
 # file: pxindex.rb
 
+require 'pxindex-builder'
 require 'polyrex-headings'
+
 
 
 class PxIndex
 
-  def initialize(raw_s, debug: false, allsorted: false, indexsorted: false)
+  def initialize(raw_s=nil, debug: false, allsorted: false, indexsorted: false)
 
-    @sorted = allsorted    
+    @allsorted, @indexsorted = allsorted, indexsorted
     @debug = debug    
     
-    s, _ = RXFHelper.read raw_s
+    read raw_s if raw_s
+
+  end
+
+  # Returns a PxIndexBuilder object which can build from am index or phrases
+  #
+  def import(s)
     
-    lines = s.lines
-
-    header = []
-    header << lines.shift until lines[0].strip.empty?
+    read(PxIndexBuilder.new(s, debug: @debug).to_s)
     
-    a = LineTree.new(lines.join.gsub(/^# [a-z]\n/,'')).to_a
-    a2 = a.group_by {|x| x.first[0] }.sort.to_a
-    
-    s2 =  a2.map do |x|      
-      '# ' + x[0] + "\n\n" + \
-          treeize(allsorted || indexsorted ? sort(x[-1]) : x[-1])
-    end.join("\n\n")
-    
-    puts 's2: ' + s2.inspect if @debug
-    @raw_px = header.join + "\n" + s2
-
-    @px = PolyrexHeadings.new(@raw_px).to_polyrex   
-    @rs = @px.records
-
-    @s = ''
-    @a = []
-
-
   end
   
   def parent()
@@ -56,7 +43,7 @@ class PxIndex
       
       @s = s      
 
-      @rs = @px.records
+      @rs = @px.records.flat_map(&:records)
       
       s2 = ''
       
@@ -89,6 +76,33 @@ class PxIndex
   end
 
   private
+  
+  def read(raw_s)
+    
+    s, _ = RXFHelper.read raw_s
+    
+    lines = s.lines
+
+    header = []
+    header << lines.shift until lines[0].strip.empty?
+    
+    a = LineTree.new(lines.join.gsub(/^# [a-z]\n/,'')).to_a
+    a2 = a.group_by {|x| x.first[0] }.sort.to_a
+    
+    s2 =  a2.map do |x|      
+      '# ' + x[0] + "\n\n" + \
+          treeize(@allsorted || @indexsorted ? sort(x[-1]) : x[-1])
+    end.join("\n\n")
+    
+    puts 's2: ' + s2.inspect if @debug
+    @raw_px = header.join + "\n" + s2
+
+    @px = PolyrexHeadings.new(@raw_px).to_polyrex   
+    @rs = @px.records.flat_map()
+
+    @s = ''
+    @a = []    
+  end
 
   def search_records(raw_s, rs=@rs)
     
@@ -120,7 +134,7 @@ class PxIndex
     end
     
     if s.length == 1 and a.any? and keywords.length < 2 then
-      a = a.first.records
+      #a = a.first.records
     end
     
     if a.any?  then
@@ -131,7 +145,7 @@ class PxIndex
 
       return nil unless keywords.length > 1
       
-      r = rs.flat_map(&:records)
+      r = rs #.flat_map(&:records)
 
       if r.any? then
         
@@ -168,7 +182,7 @@ class PxIndex
 
     if obj.is_a? Array then
       
-      r = (@sorted ? sort(obj) : obj).map {|x| treeize(x, indent+1)}.join("\n")
+      r = (@allsorted ? sort(obj) : obj).map {|x| treeize(x, indent+1)}.join("\n")
       puts 'r: ' + r.inspect if @debug
       r
 
