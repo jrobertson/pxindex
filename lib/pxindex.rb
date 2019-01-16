@@ -67,6 +67,40 @@ class PxIndex
 
   alias query q?
   
+  def build_html()
+
+    
+    @px.each_recursive do |x, parent|
+      
+      if x.is_a? Entry then
+        
+        trail = parent.attributes[:trail]
+        s = x.title.gsub(/ +/,'-')
+        x.attributes[:trail] = trail.nil? ? s : trail + '/' + s
+        
+      end
+      
+    end
+
+    doc  = Nokogiri::XML(@px.to_xml)
+    xsl  = Nokogiri::XSLT(xslt())
+
+    html_doc = Rexle.new(xsl.transform(doc).to_s)
+        
+    html_doc.root.css('.atopic').each do |e|      
+      
+      puts 'e: ' + e.parent.parent.xml.inspect if @debug
+      
+      href = e.attributes[:href]
+      if href.empty? or href[0] == '!' then
+        yield(e)        
+      end
+    end
+    
+    html_doc.xml(pretty: true, declaration: false)
+    
+  end
+  
   def to_px()
     @px
   end
@@ -131,11 +165,7 @@ class PxIndex
       if a.any? then
         puts 'a.map ' + a.map(&:title).inspect
       end
-    end
-    
-    if s.length == 1 and a.any? and keywords.length < 2 then
-      #a = a.first.records
-    end
+    end    
     
     if a.any?  then
       
@@ -145,7 +175,7 @@ class PxIndex
 
       return nil unless keywords.length > 1
       
-      r = rs #.flat_map(&:records)
+      r = rs
 
       if r.any? then
         
@@ -163,6 +193,7 @@ class PxIndex
   end
   
   def sort(a)
+    
     puts 'sorting ... a: ' + a.inspect if @debug
     return sort_children(a) if a.first.is_a? String
     
@@ -170,8 +201,11 @@ class PxIndex
       next unless x[0].is_a? String
       x[0]
     end
+    
     puts 'after sort: ' + r.inspect if @debug
+    
     r
+    
   end
   
   def sort_children(a)
@@ -191,6 +225,56 @@ class PxIndex
       '  ' * indent + obj
 
     end
+  end
+
+  
+  def xslt()
+<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:output method="xml" indent="yes" />
+
+<xsl:template match='entries'>
+  <ul>
+    <xsl:apply-templates select='summary'/>
+    <xsl:apply-templates select='records'/>
+  </ul>
+</xsl:template>
+
+<xsl:template match='entries/summary'>
+</xsl:template>
+
+<xsl:template match='records/section'>
+  <li><h1><xsl:value-of select="summary/heading"/></h1><xsl:text>
+      </xsl:text>
+
+    <xsl:apply-templates select='records'/>
+
+<xsl:text>
+    </xsl:text>
+  </li>
+</xsl:template>
+
+
+<xsl:template match='records/entry'>
+    <ul id="{summary/title}">
+  <li><xsl:text>
+          </xsl:text>
+          <a href="{summary/url}" class='atopic' id='{@id}' trail='{@trail}'>
+          <xsl:value-of select="summary/title"/></a><xsl:text>
+          </xsl:text>
+
+    <xsl:apply-templates select='records'/>
+
+<xsl:text>
+        </xsl:text>
+  </li>
+    </ul>
+</xsl:template>
+
+
+</xsl:stylesheet>    
+EOF
   end  
 
 end
