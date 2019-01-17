@@ -1,10 +1,11 @@
 Gem::Specification.new do |s|
   s.name = 'pxindex'
-  s.version = '0.2.1'
+  s.version = '0.2.2'
   s.summary = 'Experimental gem to facilitate a keyword search, ' + 
       'by querying a Polyrex document representing a hierarchical lookup table'
   s.authors = ['James Robertson']
   s.files = Dir['lib/pxindex.rb']
+  s.add_runtime_dependency('nokogiri', '~> 1.10', '>=1.10.1s')
   s.add_runtime_dependency('pxindex-builder', '~> 0.2', '>=0.2.0')
   s.add_runtime_dependency('polyrex-headings', '~> 0.1', '>=0.1.9')
   s.signing_key = '../privatekeys/pxindex.pem'

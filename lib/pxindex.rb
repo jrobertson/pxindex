@@ -2,6 +2,7 @@
 
 # file: pxindex.rb
 
+require 'nokogiri'
 require 'pxindex-builder'
 require 'polyrex-headings'
 
@@ -68,7 +69,6 @@ class PxIndex
   alias query q?
   
   def build_html()
-
     
     @px.each_recursive do |x, parent|
       
@@ -93,7 +93,17 @@ class PxIndex
       
       href = e.attributes[:href]
       if href.empty? or href[0] == '!' then
-        yield(e)        
+        
+        if block_given? then
+          
+          yield(e)
+          
+        else
+          
+          e.attributes[:href] = '#' + e.attributes[:trail].split('/')\
+              .last.downcase
+          
+        end
       end
     end
     
